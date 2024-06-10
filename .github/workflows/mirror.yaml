@@ -24,7 +24,7 @@ jobs:
             # Extract the image name and version from the issue title
             IMAGE_NAME=${{ github.event.issue.body }}
             # Define the new image name
-            NEW_IMAGE_NAME="${MIRROR_REPO}:${IMAGE_NAME#*:}"
+            NEW_IMAGE_NAME=$(echo $IMAGE_NAME | sed 's/[/:.]/-/g')
 
             # Pull the original image
             docker pull ${IMAGE_NAME}
@@ -33,25 +33,10 @@ jobs:
             docker tag ${IMAGE_NAME} ${NEW_IMAGE_NAME}
 
             # Login to the mirror repository
-            echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin ${MIRROR_REPO}
+            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} dockerhub.qingcloud.com
 
             # Push the new image to the mirror repository
-            docker push ${NEW_IMAGE_NAME}
-                        IMAGE_URL="dockerhub.qingcloud.com/theresa/github-actions/$NEW_IMAGE_NAME"
-
-            # Close the issue and comment with the new image URL
-            curl -X POST \
-            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-            -H 'Accept: application/vnd.github.v3+json' \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }}/comments \
-            -d '{"body":"镜像已同步到: `$IMAGE_URL`"}'
-
-            # Close the issue
-            curl -X PATCH \
-            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-            -H 'Accept: application/vnd.github.v3+json' \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }} \
-            -d '{"state":"closed"}'
+            docker push dockerhub.qingcloud.com/theresa/github-actions:$NEW_IMAGE_NAME
           fi
 
       - name: Logout from Docker
