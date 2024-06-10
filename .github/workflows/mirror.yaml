@@ -7,6 +7,8 @@ on:
 jobs:
   mirror:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -19,6 +21,9 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           MIRROR_REPO: dockerhub.qingcloud.com/theresa/github-actions
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
         run: |
           if [[ "${{ github.event.issue.title }}" == mirror* ]]; then
             # Extract the image name and version from the issue title
@@ -38,19 +43,8 @@ jobs:
             # Push the new image to the mirror repository
             docker push $NEW_IMAGE_NAME
 
-            # Close the issue and comment with the new image URL
-            curl -X POST \
-            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-            -H 'Accept: application/vnd.github.v3+json' \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }}/comments \
-            -d '{"body":"镜像已同步到: `$NEW_IMAGE_NAME`"}'
-
-            # Close the issue
-            curl -X PATCH \
-            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-            -H 'Accept: application/vnd.github.v3+json' \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }} \
-            -d '{"state":"closed"}'
+            gh issue comment "$NUMBER" -b "同步完成: \`$NEW_IMAGE_NAME\`"
+            gh issue close "$NUMBER" -r completed
           fi
 
       - name: Logout from Docker
