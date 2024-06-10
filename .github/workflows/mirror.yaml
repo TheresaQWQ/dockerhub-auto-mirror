@@ -1,0 +1,44 @@
+name: dockerhub-auto-mirror
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Docker
+        uses: docker-practice/actions-setup-docker@v1
+
+      - name: Check issue title and mirror image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          MIRROR_REPO: dockerhub.qingcloud.com/theresa/github-actions
+        run: |
+          if [[ "${{ github.event.issue.title }}" == mirror* ]]; then
+            # Extract the image name and version from the issue title
+            IMAGE_NAME=$(echo "${{ github.event.issue.title }}" | cut -d' ' -f2)
+            # Define the new image name
+            NEW_IMAGE_NAME="${MIRROR_REPO}:${IMAGE_NAME#*:}"
+
+            # Pull the original image
+            docker pull ${IMAGE_NAME}
+
+            # Tag the image with the new name
+            docker tag ${IMAGE_NAME} ${NEW_IMAGE_NAME}
+
+            # Login to the mirror repository
+            echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin ${MIRROR_REPO}
+
+            # Push the new image to the mirror repository
+            docker push ${NEW_IMAGE_NAME}
+          fi
+
+      - name: Logout from Docker
+        if: always()
+        run: docker logout
