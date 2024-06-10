@@ -22,7 +22,7 @@ jobs:
         run: |
           if [[ "${{ github.event.issue.title }}" == mirror* ]]; then
             # Extract the image name and version from the issue title
-            IMAGE_NAME=$(echo "${{ github.event.issue.title }}" | cut -d' ' -f2)
+            IMAGE_NAME=${{ github.event.issue.body }}
             # Define the new image name
             NEW_IMAGE_NAME="${MIRROR_REPO}:${IMAGE_NAME#*:}"
 
