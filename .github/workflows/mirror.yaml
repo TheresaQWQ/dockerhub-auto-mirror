@@ -24,7 +24,7 @@ jobs:
             # Extract the image name and version from the issue title
             IMAGE_NAME=${{ github.event.issue.body }}
             # Define the new image name
-            NEW_IMAGE_NAME=$(echo $IMAGE_NAME | sed 's/[/:.]/-/g')
+            NEW_IMAGE_NAME=dockerhub.qingcloud.com/theresa/github-actions:$(echo $IMAGE_NAME | sed 's/[/:.]/-/g')
 
             # Pull the original image
             docker pull ${IMAGE_NAME}
@@ -36,7 +36,7 @@ jobs:
             docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} dockerhub.qingcloud.com
 
             # Push the new image to the mirror repository
-            docker push dockerhub.qingcloud.com/theresa/github-actions:$NEW_IMAGE_NAME
+            docker push $NEW_IMAGE_NAME
           fi
 
       - name: Logout from Docker
