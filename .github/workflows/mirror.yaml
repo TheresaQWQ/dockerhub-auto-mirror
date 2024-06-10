@@ -37,6 +37,20 @@ jobs:
 
             # Push the new image to the mirror repository
             docker push $NEW_IMAGE_NAME
+
+            # Close the issue and comment with the new image URL
+            curl -X POST \
+            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
+            -H 'Accept: application/vnd.github.v3+json' \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }}/comments \
+            -d '{"body":"镜像已同步到: `$NEW_IMAGE_NAME`"}'
+
+            # Close the issue
+            curl -X PATCH \
+            -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' \
+            -H 'Accept: application/vnd.github.v3+json' \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.node_id }} \
+            -d '{"state":"closed"}'
           fi
 
       - name: Logout from Docker
